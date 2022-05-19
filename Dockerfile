@@ -129,8 +129,8 @@ LABEL maintainer "Dmytro Soltysiuk <dimasoltusyuk@gmail.com>"
 ENV AWS_S3_AUTHFILE="/etc/passwd-s3fs"
 ENV AWS_S3_MOUNTPOINT="/opt/data"
 ENV AWS_S3_URL="https://s3.amazonaws.com"
-ENV AWS_S3_REGION="us-east-1"
-ENV S3FS_ARGS=""
+ARG AWS_S3_REGION="us-east-1"
+ARG S3FS_ARGS=""
 
 RUN apk add --update \
   ca-certificates \
@@ -152,11 +152,18 @@ COPY --from=build-nginx /usr/local/nginx /usr/local/nginx
 COPY --from=build-ffmpeg /usr/local /usr/local
 COPY --from=build-ffmpeg /usr/lib/libfdk-aac.so.2 /usr/lib/libfdk-aac.so.2
 
+# ensure www-data user exists
+RUN set -x ; \
+  addgroup -g 82 -S www-data ; \
+  adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1
+
 # Add NGINX path, config and static files.
 ENV PATH "${PATH}:/usr/local/nginx/sbin"
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN mkdir -p "$AWS_S3_MOUNTPOINT" && mkdir /www
 COPY static /www/static
+
+# RUN chown -R www-data:www-data "$AWS_S3_MOUNTPOINT"
 
 # Add S3FS
 RUN apk --update add fuse alpine-sdk automake autoconf libxml2-dev fuse-dev curl-dev git bash;

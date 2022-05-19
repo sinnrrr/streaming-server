@@ -1,52 +1,86 @@
-# Docker + Nginx + RTMP + S3FS (AWS S3 Integration)
-A Dockerfile installing NGINX, nginx-rtmp-module and FFmpeg from source with
-default settings for HLS live streaming. Built on Alpine Linux.
+# Streaming server
+### 🤖[`nginx-http-flv-module`](https://github.com/winshining/nginx-http-flv-module) + 💾[`s3fs-fuse`](https://github.com/s3fs-fuse/s3fs-fuse) = ❤️‍🔥
+⚡ **Blazingly fast** Docker image, that provides exceptional support for integrating [`Amazon S3`](https://aws.amazon.com/s3/) with [`nginx-http-flv-module`](https://github.com/winshining/nginx-http-flv-module), **which is better, than [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module)** (see [comparison table](https://github.com/winshining/nginx-http-flv-module#features)), to save the `*.m3u8` files into AWS S3 storage.
 
-* Nginx 1.16.1 (Stable version compiled from source)
-* nginx-rtmp-module 1.2.1 (compiled from source)
+### What's inside?
+* nginx 1.16.1 (stable version compiled from source)
+* nginx-http-flv-module 1.2.10 (compiled from source)
 * ffmpeg 4.2.1 (compiled from source)
-* Default HLS settings (See: [nginx.conf](nginx.conf))
-* S3FS Fuse (Amazon S3 Integration)
+* S3FS FUSE (Amazon S3 Integration)
+* Default HLS settings (see [nginx.conf](nginx.conf))
 
-[![Docker Stars](https://img.shields.io/docker/stars/efriandika/streaming-server.svg)](https://hub.docker.com/r/efriandika/streaming-server/)
-[![Docker Pulls](https://img.shields.io/docker/pulls/efriandika/streaming-server.svg)](https://hub.docker.com/r/efriandika/streaming-server/)
+[![Docker Stars](https://img.shields.io/docker/stars/sinnrrr/streaming-server.svg)](https://hub.docker.com/r/efriandika/streaming-server/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/sinnrrr/streaming-server.svg)](https://hub.docker.com/r/efriandika/streaming-server/)
 [![Docker Automated build](https://img.shields.io/docker/automated/efriandika/streaming-server.svg)](https://hub.docker.com/r/efriandika/streaming-server/builds/)
-[![Circle CI](https://circleci.com/gh/efriandika/streaming-server.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/efriandika/streaming-server)
+[![Circle CI](https://circleci.com/gh/sinnrrr/streaming-server.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/sinnrrr/streaming-server)
 
 ## Usage
 
-### Server
+Run container from source:
+```bash
+docker run --rm -it \
+  -e AWS_ACCESS_KEY_ID=secret \
+  -e AWS_SECRET_ACCESS_KEY=secret \
+  -e AWS_S3_BUCKET_NAME=secret \
+  -e AWS_S3_REGION=us-east-1 \
+  --cap-add=SYS_ADMIN --device="/dev/fuse" --security-opt="apparmor=unconfined" \
+  -p 1935:1935 -p 8080:80 -p 8443:443 sinnrrr/streaming-server
+```
 
-* Run container from source:
-```
-docker run --rm --privileged -it -e AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxxxxxxx -e AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx -e AWS_S3_BUCKET_NAME=xxxx-yyyy-zzzz -e AWS_S3_REGION=us-east-1 -p 1935:1935 -p 8080:80 efriandika/streaming-server
+`docker-compose.yml` can be:
+```yaml
+streaming-server:
+  image: sinnrrr/streaming-server:latest
+  env_file:
+    - .env # I encourage you to use .env file
+  ports:
+    - 1935:1935
+    - 8080:80
+    - 8443:443
+  cap_add:
+    - SYS_ADMIN
+  devices:
+    - /dev/fuse
+  security_opt:
+    - apparmor:unconfined
 ```
 
-* Stream live content to:
+## Streaming live content 
+### Using RTMP
 ```
-rtmp://<server ip>:1935/stream/$STREAM_NAME
+rtmp://<server_ip>:1935/stream/<stream_name>
 ```
 
 ### OBS Configuration
+To stream from OBS go to `Settings -> Stream`, and input the following:
 * Stream Type: `Custom Streaming Server`
-* URL: `rtmp://localhost:1935/stream`
-* Example Stream Key: `hello`
+* URL: `rtmp://localhost:1935/stream` (stream name is "stream")
+* Stream Key: `hello` (it could be anything, but we will use this for sake of example)
 
-## Using AWS and CloudFront
+## Consuming live content
+### Using `localhost`
+* In your browser, VLC or any HLS player, open:
+```
+http://localhost:8080/live/<stream_key>.m3u8
+```
 
-### Watch Stream
+Following our example, `<stream_key>` is `hello`, so:
+* Access playlist using URL: `http://localhost:8080/live/hello.m3u8`
+* Play online using [VideoJS Player](https://video-dev.github.io/hls.js/stable/demo/?src=http%3A%2F%2Flocalhost%3A8080%2Flive%2Fhello.m3u8)
+* FFplay: `ffplay -fflags nobuffer rtmp://localhost:1935/stream/hello`
 
-Access by using your S3 public URL.
-
-For example => `https://your-s3-bucket.s3.us-east-2.amazonaws.com/hls/hello.m3u8`
-
-or you can set your cloudfront (cache disabled) distribution then based on your S3
-
+### Using AWS S3
 >  ATTENTION:
->  Don't forget to set public access and enable CORS in your s3 bucket
+>  Don't forget to set public access and enable CORS in your S3 bucket
+
+You can access your livescream playlist using your S3 public URL.
+
+For example: `https://<s3_bucket_name>.s3.us-east-1.amazonaws.com/hls/hello.m3u8`
+
+or you can set your CloudFront (cache disabled) distribution then based on your S3.
 
 
-## Using your Own Server
+## Configuration
 
 ### SSL (optional)
 To enable SSL, see [nginx.conf](nginx.conf) and uncomment the lines:
@@ -60,18 +94,19 @@ This will enable HTTPS using a self-signed certificate supplied in [/certs](/cer
 
 I recommend using [Certbot](https://certbot.eff.org/docs/install.html) from [Let's Encrypt](https://letsencrypt.org).
 
+### Environment variables
+| Variable name         | Default value              | Required |
+|-----------------------|----------------------------|----------|
+| AWS_ACCESS_KEY_ID     | -                          | true     |
+| AWS_SECRET_ACCESS_KEY | -                          | true     |
+| AWS_BUCKET_NAME       | -                          | true     |
+| AWS_S3_AUTHFILE       | `/etc/passwd-s3fs`         | false    |
+| AWS_S3_MOUNTPOINT     | `/opt/data`                | false    |
+| AWS_S3_URL            | `https://s3.amazonaws.com` | false    |
+| AWS_S3_REGION         | `us-east-1`                | false    |
+| S3FS_ARGS             | -                          | false    |
 
-### Watch Stream
-* In Safari, VLC or any HLS player, open:
-```
-http://<server ip>:8080/live/$STREAM_NAME.m3u8
-```
-* Example Playlist: `http://localhost:8080/live/hello.m3u8`
-* [VideoJS Player](https://video-dev.github.io/hls.js/stable/demo/?src=http%3A%2F%2Flocalhost%3A8080%2Flive%2Fhello.m3u8)
-* FFplay: `ffplay -fflags nobuffer rtmp://localhost:1935/stream/hello`
-
-
-### FFmpeg Build
+### `ffmpeg` build information
 ```
 $ ffmpeg -buildconf
 
@@ -116,9 +151,9 @@ ffmpeg version 4.2.1 Copyright (c) 2000-2019 the FFmpeg developers
 ```
 
 ## Resources
-* https://alpinelinux.org/
+* https://github.com/winshining/nginx-http-flv-module
+* https://github.com/s3fs-fuse/s3fs-fuse
 * http://nginx.org
-* https://github.com/arut/nginx-rtmp-module
+* https://alpinelinux.org/
 * https://www.ffmpeg.org
 * https://obsproject.com
-* https://github.com/s3fs-fuse/s3fs-fuse

@@ -6,7 +6,7 @@
 set -e
 [ "${DEBUG:-false}" == 'true' ] && {
 	set -x
-	S3FS_DEBUG='-o dbglevel=debug -o curldbg'
+	S3FS_DEBUG='-o dbglevel=dbg -o curldbg -f'
 }
 
 # If no command specified, print error
@@ -35,10 +35,13 @@ if [ ! -f "$AWS_S3_AUTHFILE" ]; then
 fi
 
 echo "==> Mounting S3 Filesystem $AWS_S3_MOUNTPOINT"
-mkdir -p "$AWS_S3_MOUNTPOINT"
 
 # s3fs mount command
-s3fs "$AWS_S3_BUCKET_NAME" "$AWS_S3_MOUNTPOINT" -o passwd_file="$AWS_S3_AUTHFILE" -o url="$AWS_S3_URL" $S3FS_DEBUG $S3FS_ARGS
+s3fs $AWS_S3_BUCKET_NAME $AWS_S3_MOUNTPOINT \
+	-o passwd_file="$AWS_S3_AUTHFILE" \
+	-o url=$AWS_S3_URL \
+	-o endpoint=$AWS_S3_REGION \
+	$S3FS_DEBUG $S3FS_ARGS
 
 # RUN NGINX
 nginx
