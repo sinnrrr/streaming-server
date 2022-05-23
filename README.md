@@ -2,7 +2,7 @@
 ### 🤖[`nginx-http-flv-module`](https://github.com/winshining/nginx-http-flv-module) + 💾[`s3fs-fuse`](https://github.com/s3fs-fuse/s3fs-fuse) = ❤️‍🔥
 ⚡ **Blazingly fast** Docker image, that provides exceptional support for integrating [`Amazon S3`](https://aws.amazon.com/s3/) with [`nginx-http-flv-module`](https://github.com/winshining/nginx-http-flv-module), **which is better, than [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module)** (see [comparison table](https://github.com/winshining/nginx-http-flv-module#features)), to save the `*.m3u8` files into AWS S3 storage.
 
-Based on https://github.com/efriandika/streaming-server
+Based on https://github.com/efriandika/streaming-server.
 
 ### What's inside?
 * nginx 1.16.1 (stable version compiled from source)
