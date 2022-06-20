@@ -8,7 +8,7 @@ set -e
 [ "${DEBUG:-false}" = 'true' ] && {
 	set -x
 
-	S3FS_DEBUG='-o dbglevel=dbg -o curldbg'
+	S3FS_DEBUG='-o dbglevel=dbg -o curldbg -f'
 }
 
 # If no command specified, print error
@@ -37,6 +37,7 @@ if [ ! -f "$S3_AUTHFILE" ]; then
 fi
 
 echo "==> Mounting S3 Filesystem $S3_MOUNTPOINT"
+mkdir -p "$S3_MOUNTPOINT"
 
 # s3fs mount command
 s3fs "$S3_BUCKET_NAME" "$S3_MOUNTPOINT" \
@@ -46,5 +47,8 @@ s3fs "$S3_BUCKET_NAME" "$S3_MOUNTPOINT" \
 	-o "endpoint=$S3_REGION" \
 	$S3FS_DEBUG $S3FS_ARGS
 
-# RUN NGINX
-nginx
+# see https://github.com/efriandika/streaming-server/issues/3
+sleep 5
+
+envsubst "$(env | sed -e 's/=.*//' -e 's/^/\$/g')" </etc/nginx/nginx.conf.template >/etc/nginx/nginx.conf &&
+	nginx

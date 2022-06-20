@@ -166,17 +166,19 @@ FROM alpine:3.8
 LABEL maintainer "Dmytro Soltysiuk <dimasoltusyuk@gmail.com>"
 
 ENV S3_AUTHFILE="/etc/passwd-s3fs"
-ENV S3_MOUNTPOINT="/opt/data"
+ENV S3_MOUNTPOINT="/opt/data/recordings"
 ENV S3_URL="https://s3.amazonaws.com"
 ARG S3_REGION="us-east-1"
 ARG S3FS_ARGS=""
 
-RUN apk add --update \
+RUN apk add --no-cache \
   ca-certificates \
+  gettext \
   openssl \
   pcre \
   lame \
   libogg \
+  curl \
   libass \
   libvpx \
   libvorbis \
@@ -207,9 +209,13 @@ RUN adduser -D -g 'www' www
 
 # Add NGINX path, config and static files.
 ENV PATH "${PATH}:/usr/local/nginx/sbin"
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf.template
 RUN mkdir -p "$S3_MOUNTPOINT" && mkdir /www
 COPY static /www/static
+
+ENV HTTP_PORT 80
+ENV HTTPS_PORT 443
+ENV RTMP_PORT 1935
 
 COPY ./docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh

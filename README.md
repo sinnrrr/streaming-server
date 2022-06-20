@@ -103,7 +103,7 @@ I recommend using [Certbot](https://certbot.eff.org/docs/install.html) from [Let
 | AWS_SECRET_ACCESS_KEY | -                          | true     |
 | AWS_BUCKET_NAME       | -                          | true     |
 | AWS_S3_AUTHFILE       | `/etc/passwd-s3fs`         | false    |
-| AWS_S3_MOUNTPOINT     | `/opt/data`                | false    |
+| AWS_S3_MOUNTPOINT     | `/opt/data/recordings`     | false    |
 | AWS_S3_URL            | `https://s3.amazonaws.com` | false    |
 | AWS_S3_REGION         | `us-east-1`                | false    |
 | S3FS_ARGS             | -                          | false    |
